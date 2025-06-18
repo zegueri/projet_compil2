@@ -6,6 +6,8 @@
 
 int yyerror(const char *s);
 extern int yylex(void);
+extern int from_file;
+extern int yylineno;
 
 
 /* ---------- structures et helpers ---------- */
@@ -39,26 +41,73 @@ static int eval_node(const struct Node*n,const int*vals){
 }
 void free_node(struct Node*n){ if(!n)return; free_node(n->l); free_node(n->r); free(n); }
 
+
 /* ---------- buffers ---------- */
 static unsigned char boolbuf[256];   /* tables brutes */
 static int  bool_count = 0;
 
 static char varnames[MAX_VARS][MAX_NAME];
 static int  varcnt = 0;
+static int  have_varlist = 0;
+static const char *def_names[MAX_VARS] = {"x","y","z","s","t","u","v","w"};
 
 static int  vals[8];  /* pour eval */
 static int  valcnt2 = 0;
 
 static int get_var_index(const char*name){
-    for(int i=0;i<varcnt;++i)
-        if(!strcmp(name,varnames[i])) return i;
-    if(varcnt>=MAX_VARS){
-        fprintf(stderr,"Trop de variables (max %d)\n",MAX_VARS);
+    if(!have_varlist){
+        for(int i=0;i<MAX_VARS;i++){
+            if(strcmp(name,def_names[i])==0){
+                if(varcnt<i+1) varcnt = i+1;
+                return i;
+            }
+        }
+        fprintf(stderr,"Unknown variable %s\n",name);
         return 0;
+    } else {
+        for(int i=0;i<varcnt;++i)
+            if(!strcmp(name,varnames[i])) return i;
+        if(varcnt>=MAX_VARS){
+            fprintf(stderr,"Trop de variables (max %d)\n",MAX_VARS);
+            return 0;
+        }
+        strncpy(varnames[varcnt],name,MAX_NAME-1);
+        varnames[varcnt][MAX_NAME-1]='\0';
+        return varcnt++;
     }
-    strncpy(varnames[varcnt],name,MAX_NAME-1);
-    varnames[varcnt][MAX_NAME-1]='\0';
-    return varcnt++;
+}
+
+static char* node_to_string(const struct Node*n){
+    char *res=NULL,*a,*b;
+    switch(n->type){
+        case N_CONST:
+            asprintf(&res,"%d",n->val);
+            break;
+        case N_VAR:
+            asprintf(&res,"%s", have_varlist ? varnames[n->vidx] : def_names[n->vidx]);
+            break;
+        case N_NOT:
+            a=node_to_string(n->l);
+            asprintf(&res,"!%s",a); free(a);
+            break;
+        case N_AND:
+            a=node_to_string(n->l); b=node_to_string(n->r);
+            asprintf(&res,"(%s & %s)",a,b); free(a); free(b);
+            break;
+        case N_OR:
+            a=node_to_string(n->l); b=node_to_string(n->r);
+            asprintf(&res,"(%s | %s)",a,b); free(a); free(b);
+            break;
+        case N_XOR:
+            a=node_to_string(n->l); b=node_to_string(n->r);
+            asprintf(&res,"(%s ^ %s)",a,b); free(a); free(b);
+            break;
+        case N_IMPL:
+            a=node_to_string(n->l); b=node_to_string(n->r);
+            asprintf(&res,"(%s => %s)",a,b); free(a); free(b);
+            break;
+    }
+    return res;
 }
 %}
 
@@ -96,13 +145,19 @@ command:
     | define_cmd
     | KW_TABLE   IDENT                       { print_table($2);     free($2); }
     | KW_VARLIST IDENT                       { print_varlist($2);   free($2); }
+    | KW_FORMULA IDENT                       { print_formula($2);   free($2); }
     | KW_EVAL    IDENT KW_AT value_seq       { eval_and_print($2,vals,valcnt2); free($2); }
     ;
 
 /* ----- define ----- */
 define_cmd:
       KW_DEFINE IDENT opt_varlist EQUAL table_def
-        { add_function_table($2,-1,NULL,boolbuf,bool_count); free($2); }
+        {
+          int arity = have_varlist ? varcnt : -1;
+          const char (*names)[MAX_NAME] = have_varlist ? varnames : NULL;
+          add_function_table($2,arity,names,boolbuf,bool_count,NULL);
+          free($2);
+        }
     | KW_DEFINE IDENT opt_varlist EQUAL expr
         {
           int arity = varcnt;
@@ -114,20 +169,23 @@ define_cmd:
                   v[i] = (idx >> (arity-1-i)) & 1;
               tbl[idx] = eval_node($5,v);
           }
-          add_function_table($2,arity,varnames,tbl,size);
+          const char (*names)[MAX_NAME] = have_varlist ? varnames : NULL;
+          char *form = node_to_string($5);
+          add_function_table($2,arity,names,tbl,size,form);
+          free(form);
           free_node($5); free($2);
         }
     ;
 
 /* ----- liste optionnelle de variables ----- */
 opt_varlist:
-      /* vide */                { varcnt = 0; }
-    | LPAREN id_list RPAREN
+      /* vide */                                { varcnt = 0; have_varlist = 0; }
+    | LPAREN { have_varlist = 1; varcnt = 0; } id_list RPAREN
     ;
 
 id_list:
-      IDENT                    { varcnt=0; get_var_index($1); free($1); }
-    | id_list COMMA IDENT      {           get_var_index($3); free($3); }
+      IDENT                    { get_var_index($1); free($1); }
+    | id_list COMMA IDENT      { get_var_index($3); free($3); }
     ;
 
 /* ----- table brute ----- */
@@ -161,4 +219,10 @@ expr:
     ;
 %%
 
-int yyerror(const char *s){ fprintf(stderr,"Parse error: %s\n",s); return 0; }
+int yyerror(const char *s){
+    if(from_file)
+        fprintf(stderr,"Parse error line %d: %s\n", yylineno, s);
+    else
+        fprintf(stderr,"Parse error: %s\n", s);
+    return 0;
+}
