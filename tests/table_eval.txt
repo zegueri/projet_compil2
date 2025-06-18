@@ -1,0 +1,4 @@
+Define nand = { 1 1 1 0 }
+table nand
+eval nand at 0 0
+eval nand at 1 1

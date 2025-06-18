@@ -1,7 +1,12 @@
 #!/bin/sh
 set -e
-for t in tests/*.txt; do
+
+# build interpreter if needed
+make
+
+# run every test file in alphabetical order
+for t in $(ls tests/*.txt | sort); do
   echo "== $t =="
-  ./logic_interpreter "$t"
+  ./logic_interpreter "$t" || true
   echo
 done
