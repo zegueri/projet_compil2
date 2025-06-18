@@ -7,11 +7,11 @@
 
 typedef struct {
     char name[MAX_NAME];
-    int arity;                     /* number of variables */
-    char vars[MAX_VARS][MAX_NAME]; /* variable names */
-    int num_entries;               /* size of table = 1<<arity */
+    int arity;                     /* nombre de variables */
+    char vars[MAX_VARS][MAX_NAME]; /* noms des variables */
+    int num_entries;               /* taille de la table = 1<<arity */
     unsigned char table[1<<MAX_VARS];
-    char *formula;                 /* textual formula, NULL if none */
+    char *formula;                 /* formule textuelle, NULL sinon */
 } Function;
 
 void logic_init(void);

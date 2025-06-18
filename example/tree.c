@@ -9,9 +9,9 @@ enum node_type { LEAF = 0, INTERNAL_NODE };
 struct _tree {
     enum node_type type;
     union {
-        /* type is LEAF */
+        /* type feuille */
         long val;
-        /* type is INTERNAL_NODE */
+        /* type nœud interne */
         struct {
             char op;
             struct _tree* left;

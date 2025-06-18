@@ -1,0 +1,58 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{margin=2cm}
+\usepackage{hyperref}
+\title{Mini-interpréteur logique}
+\date{}
+\begin{document}
+\maketitle
+\section*{Introduction}
+Ce projet implémente un petit interpréteur permettant de définir et manipuler des fonctions booléennes. L'utilisateur peut créer une fonction à partir d'une formule ou d'une table de vérité et ensuite obtenir diverses informations (liste, variables, table, formule équivalente) ou évaluer la fonction. Le code s'appuie sur Flex et Bison.
+
+\section*{Structures de données}
+Les fonctions sont stockées dans une structure \texttt{Function} (\texttt{src/logic.h}) contenant :
+\begin{itemize}
+  \item le nom de la fonction ;
+  \item son arité (nombre de variables, limité à 8) ;
+  \item un tableau de noms de variables ;
+  \item la table de vérité (\texttt{unsigned char} de taille $2^{\text{arité}}$) ;
+  \item éventuellement la formule textuelle d'origine.
+\end{itemize}
+L'ensemble des fonctions définies est gardé dans un tableau fixe de taille \texttt{MAX\_FUNCS}. Ce choix simple facilite la gestion mémoire mais limite le nombre maximal de fonctions.
+
+Les formules temporaires sont représentées pendant l'analyse syntaxique par un arbre de nœuds (structure \texttt{Node} dans \texttt{src/parser.y}) décrivant les opérateurs logiques, les variables et les appels éventuels à d'autres fonctions. Cet arbre sert à calculer la table de vérité d'une nouvelle fonction définie par une formule.
+
+\section*{Fonctionnement général}
+Le fichier \texttt{lexer.l} réalise l'analyse lexicale. Les mots-clés du langage sont reconnus sans distinction de casse. L'analyse syntaxique (\texttt{parser.y}) construit l'arbre de la formule et déclenche les actions suivantes :
+\begin{itemize}
+  \item \textbf{define} : création d'une fonction à partir d'une table ou d'une formule. La table est soit lue directement, soit calculée en évaluant l'arbre de la formule pour toutes les combinaisons de valeurs.
+  \item \textbf{list}, \textbf{varlist}, \textbf{table}, \textbf{formula}, \textbf{eval} : commandes permettant respectivement d'afficher la liste des fonctions, le nom de leurs variables, leur table de vérité, une formule équivalente (DNF si la définition était une table) et d'évaluer la fonction sur un jeu de valeurs.
+  \item Lecture depuis un fichier : si un nom de fichier est passé en argument, toutes les commandes sont lues dans ce fichier et les erreurs affichent le numéro de ligne.
+\end{itemize}
+Les formules peuvent contenir des appels imbriqués à des fonctions déjà définies, ce qui permet de composer facilement des définitions.
+
+\section*{Fonctionnalités réalisées}
+\begin{itemize}
+  \item Définition de fonctions par formule logique ou par table de vérité.
+  \item Calcul automatique de l'arité lors d'une définition par table si elle n'est pas fournie.
+  \item Évaluation d'une fonction et affichage de sa table ou d'une formule équivalente.
+  \item Possibilité de lister les fonctions connues et les variables associées.
+  \item Mode non interactif en fournissant un fichier de commandes.
+  \item Appels de fonctions au sein des formules (composition).
+  \item Ensemble de tests automatisés via \texttt{run-tests.sh}.
+\end{itemize}
+
+\section*{Limites et pistes d'amélioration}
+\begin{itemize}
+  \item Nombre limité de fonctions et de variables (128 fonctions, 8 variables).
+  \item Gestion d'erreur minimale : les diagnostics restent succincts et aucune récupération n'est tentée.
+  \item Les formules issues d'une table sont converties en forme normale disjonctive; cette représentation peut être longue et n'est pas simplifiée.
+  \item Les données sont stockées dans des structures statiques : une version plus robuste utiliserait une allocation dynamique et des listes chaînées.
+  \item L'analyseur pourrait être enrichi pour supporter davantage d'opérateurs ou un système de commentaires.
+\end{itemize}
+\section*{Conclusion}
+Malgré ces limitations, l'interpréteur couvre l'ensemble des fonctionnalités principales du sujet. Les étudiants peuvent facilement l'étendre ou l'adapter pour explorer d'autres optimisations ou formes de représentation des fonctions logiques.
+\end{document}

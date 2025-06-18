@@ -44,7 +44,7 @@ int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
         }
     }
 
-    /* overwrite if already exists */
+    /* écrase la fonction si elle existe déjà */
     Function *existing = (Function *)get_function(name);
 
     if (existing) {

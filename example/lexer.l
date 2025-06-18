@@ -24,7 +24,7 @@ integer   {digit}+
 ")"   { return RPAREN; }
 "\n"  { return EOL;    }
 
-[ \r\t] { /* blanks are ignored */ }
+[ \r\t] { /* les espaces sont ignorés */ }
 .       { return OTHER;            }
 <<EOF>> { return EOL;              }
 

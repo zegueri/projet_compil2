@@ -23,7 +23,7 @@ struct Node {
     enum NType type;
     int   val;        /* N_CONST */
     int   vidx;       /* N_VAR */
-    struct Node *l,*r;/* for unary/binary */
+    struct Node *l,*r;/* pour unaire/binaire */
     char  name[MAX_NAME];
     int   argc;
     struct Node *args[MAX_VARS];
@@ -280,7 +280,7 @@ expr:
     ;
 
 call_args:
-      /* empty */               { $$.count=0; }
+      /* vide */               { $$.count=0; }
     | expr                      { $$.count=1; $$.items[0]=$1; }
     | call_args COMMA expr      {
           $$.count = $1.count + 1;

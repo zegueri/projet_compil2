@@ -7,7 +7,7 @@
 %}
 
 %%
-[ \t]+                    /* skip whitespace */
+[ \t]+                    /* espaces ignorés */
 "\n"                       return NEWLINE;
 "("                        return LPAREN;
 ")"                        return RPAREN;

@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    yydebug = 0; /* put 1 to make bison verbose */
+    yydebug = 0; /* mettre 1 pour rendre bison bavard */
     
     tree res;
     while (yyparse(&res) == 0) {
