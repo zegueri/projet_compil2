@@ -10,7 +10,7 @@ static const char *default_names[MAX_VARS] = {"x","y","z","s","t","u","v","w"};
 
 void logic_init(void) { func_count = 0; }
 
-static Function *lookup(const char *name)
+const Function *get_function(const char *name)
 {
     for (int i = 0; i < func_count; ++i)
         if (!strcmp(funcs[i].name, name))
@@ -27,7 +27,8 @@ static int compute_arity(int num_entries)
 }
 
 int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
-                       const unsigned char *table, int num_entries)
+                       const unsigned char *table, int num_entries,
+                       const char *formula)
 {
     if (num_entries > (1 << MAX_VARS)) {
         fprintf(stderr, "Table too large (max %d)\n", 1 << MAX_VARS);
@@ -44,8 +45,12 @@ int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
     }
 
     /* overwrite if already exists */
-    Function *existing = lookup(name);
-    if (existing) { *existing = funcs[func_count - 1]; func_count--; }
+    Function *existing = (Function *)get_function(name);
+    if (existing) {
+        free(existing->formula);
+        *existing = funcs[func_count - 1];
+        func_count--;
+    }
 
     Function *f = &funcs[func_count++];
     strncpy(f->name, name, MAX_NAME - 1);
@@ -60,6 +65,7 @@ int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
     }
 
     memcpy(f->table, table, num_entries);
+    f->formula = formula ? strdup(formula) : NULL;
     printf("→ define %s (%d vars) ok\n", name, arity);
     return 0;
 }
@@ -73,7 +79,7 @@ void list_functions(void)
 
 void print_varlist(const char *name)
 {
-    Function *f = lookup(name);
+    Function *f = (Function *)get_function(name);
     if (!f) { fprintf(stderr, "Unknown function %s\n", name); return; }
     printf("→ varlist %s; ", name);
     for (int i = 0; i < f->arity; ++i) printf("%s ", f->vars[i]);
@@ -82,14 +88,14 @@ void print_varlist(const char *name)
 
 void print_table(const char *name)
 {
-    Function *f = lookup(name);
+    Function *f = (Function *)get_function(name);
     if (!f) { fprintf(stderr, "Unknown function %s\n", name); return; }
     printf("→ table %s; { ", name);
     for (int i = 0; i < f->num_entries; ++i) printf("%d ", f->table[i]);
     printf("}\n");
 }
 
-static int eval_function(const Function *f, const int *values)
+int eval_function_direct(const Function *f, const int *values)
 {
     int idx = 0;
     for (int i = 0; i < f->arity; ++i) idx = (idx << 1) | (values[i] & 1);
@@ -98,12 +104,48 @@ static int eval_function(const Function *f, const int *values)
 
 void eval_and_print(const char *name, const int *values, int value_count)
 {
-    Function *f = lookup(name);
+    Function *f = (Function *)get_function(name);
     if (!f) { fprintf(stderr, "Unknown function %s\n", name); return; }
     if (value_count != f->arity) {
         fprintf(stderr, "eval %s: expected %d values, got %d\n", name, f->arity, value_count);
         return;
     }
-    int res = eval_function(f, values);
+    int res = eval_function_direct(f, values);
     printf("→ eval %s; %d\n", name, res);
 }
+
+static void build_dnf(const Function *f, char *buf, size_t bufsz)
+{
+    buf[0] = '\0';
+    int first = 1;
+    for (int idx = 0; idx < f->num_entries; ++idx) {
+        if (!f->table[idx]) continue;
+        if (!first) strncat(buf, " | ", bufsz - strlen(buf) - 1);
+        first = 0;
+        strncat(buf, "(", bufsz - strlen(buf) - 1);
+        for (int v = 0; v < f->arity; ++v) {
+            if (v) strncat(buf, " & ", bufsz - strlen(buf) - 1);
+            if (!((idx >> (f->arity - 1 - v)) & 1))
+                strncat(buf, "!", bufsz - strlen(buf) - 1);
+            strncat(buf, f->vars[v], bufsz - strlen(buf) - 1);
+        }
+        strncat(buf, ")", bufsz - strlen(buf) - 1);
+    }
+    if (first)
+        strncpy(buf, "0", bufsz - 1);
+}
+
+void print_formula(const char *name)
+{
+    Function *f = (Function *)get_function(name);
+    if (!f) { fprintf(stderr, "Unknown function %s\n", name); return; }
+    printf("→ formula %s; ", name);
+    if (f->formula) {
+        printf("%s\n", f->formula);
+    } else {
+        char buf[4096];
+        build_dnf(f, buf, sizeof(buf));
+        printf("%s\n", buf);
+    }
+}
+
