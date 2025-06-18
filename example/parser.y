@@ -11,8 +11,8 @@ extern int yylex();
 %}
 
 %code requires {
-    /* We need this in order to use 'tree' (instead of 'struct _tree*')
-     * in %union and %parse-param.
+    /* Ceci est nécessaire pour utiliser 'tree' (au lieu de 'struct _tree*')
+     * dans %union et %parse-param.
      */
     #include "tree.h"
 }
@@ -47,9 +47,9 @@ Expr:
   | Expr MINUS Expr      { $$ = make_node($1, '-', $3); }
   | Expr TIMES Expr      { $$ = make_node($1, '*', $3); }
   | Expr DIV Expr        { if (is_zero($3)) {
-                             /* Division by zero is impossible, so:
-                              * 1. We print an error message by calling our 'yyerror' function.
-                              * 2. We tell bison to propagate the error by calling the 'YYERROR;' macro.
+                             /* La division par zéro est impossible, donc :
+                              * 1. on affiche un message d'erreur avec notre fonction 'yyerror'.
+                              * 2. on demande à bison de propager l'erreur via la macro 'YYERROR;'.
                               */
                              yyerror(NULL, "division by zero");
                              YYERROR;

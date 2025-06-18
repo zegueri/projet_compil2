@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-# build interpreter if needed
+# construit l'interpréteur si nécessaire
 make
 
-# run every test file in alphabetical order
+# exécute tous les tests par ordre alphabétique
 for t in $(ls tests/*.txt | sort); do
   echo "== $t =="
   ./logic_interpreter "$t" || true
