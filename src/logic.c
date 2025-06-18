@@ -46,6 +46,7 @@ int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
 
     /* overwrite if already exists */
     Function *existing = (Function *)get_function(name);
+
     if (existing) {
         free(existing->formula);
         *existing = funcs[func_count - 1];
@@ -105,12 +106,14 @@ int eval_function_direct(const Function *f, const int *values)
 void eval_and_print(const char *name, const int *values, int value_count)
 {
     Function *f = (Function *)get_function(name);
+
     if (!f) { fprintf(stderr, "Unknown function %s\n", name); return; }
     if (value_count != f->arity) {
         fprintf(stderr, "eval %s: expected %d values, got %d\n", name, f->arity, value_count);
         return;
     }
     int res = eval_function_direct(f, values);
+
     printf("→ eval %s; %d\n", name, res);
 }
 
@@ -138,6 +141,7 @@ static void build_dnf(const Function *f, char *buf, size_t bufsz)
 void print_formula(const char *name)
 {
     Function *f = (Function *)get_function(name);
+
     if (!f) { fprintf(stderr, "Unknown function %s\n", name); return; }
     printf("→ formula %s; ", name);
     if (f->formula) {

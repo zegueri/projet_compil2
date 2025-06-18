@@ -17,6 +17,7 @@ typedef struct {
 void logic_init(void);
 const Function *get_function(const char *name);
 int eval_function_direct(const Function *f, const int *values);
+
 int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
                        const unsigned char *table, int num_entries,
                        const char *formula);

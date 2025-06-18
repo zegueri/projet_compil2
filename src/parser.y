@@ -78,6 +78,7 @@ void free_node(struct Node*n){
 }
 
 /* ---------- buffers ---------- */
+
 static unsigned char boolbuf[256];   /* tables brutes */
 static int  bool_count = 0;
 
@@ -155,6 +156,7 @@ static char* node_to_string(const struct Node*n){
                 asprintf(&res, "%s)", old); free(old);
             }
             break;
+
     }
     return res;
 }
@@ -166,6 +168,7 @@ static char* node_to_string(const struct Node*n){
     struct Node *node;
     struct NodeList nlist;
 }
+
 
 %token <num> BOOL
 %token <str> IDENT
@@ -215,6 +218,7 @@ define_cmd:
           int size  = 1 << arity;
           unsigned char tbl[1<<MAX_VARS];
           eval_error = 0;
+
           for(int idx=0; idx<size; ++idx){
               int v[MAX_VARS];
               for(int i=0;i<arity;++i)
@@ -227,6 +231,7 @@ define_cmd:
               add_function_table($2,arity,names,tbl,size,form);
               free(form);
           }
+
           free_node($5); free($2);
         }
     ;
