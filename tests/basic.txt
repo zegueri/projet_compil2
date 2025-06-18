@@ -1,0 +1,5 @@
+Define f = x or !z
+varlist f
+formula f
+define h(a,b,c) = { 0 1 1 0 1 0 0 1 }
+list
