@@ -12,6 +12,14 @@
 \section*{Introduction}
 Ce projet implémente un petit interpréteur permettant de définir et manipuler des fonctions booléennes. L'utilisateur peut créer une fonction à partir d'une formule ou d'une table de vérité et ensuite obtenir diverses informations (liste, variables, table, formule équivalente) ou évaluer la fonction. Le code s'appuie sur Flex et Bison.
 
+\section*{Objectifs et organisation du projet}
+L'objectif principal était de répondre aux commandes décrites dans le sujet pour manipuler des fonctions logiques. Le programme se compose de plusieurs fichiers :
+\begin{itemize}
+  \item \texttt{lexer.l} et \texttt{parser.y} : analyse lexicale et syntaxique ;
+  \item \texttt{logic.c} et \texttt{logic.h} : structures de données et opérations sur les fonctions ;
+  \item \texttt{main.c} : boucle de lecture des commandes, en mode interactif ou depuis un fichier.
+\end{itemize}
+Un \texttt{Makefile} et un script \texttt{run-tests.sh} facilitent la compilation et l'exécution des tests.
 \section*{Structures de données}
 Les fonctions sont stockées dans une structure \texttt{Function} (\texttt{src/logic.h}) contenant :
 \begin{itemize}
@@ -23,8 +31,10 @@ Les fonctions sont stockées dans une structure \texttt{Function} (\texttt{src/l
 \end{itemize}
 L'ensemble des fonctions définies est gardé dans un tableau fixe de taille \texttt{MAX\_FUNCS}. Ce choix simple facilite la gestion mémoire mais limite le nombre maximal de fonctions.
 
-Les formules temporaires sont représentées pendant l'analyse syntaxique par un arbre de nœuds (structure \texttt{Node} dans \texttt{src/parser.y}) décrivant les opérateurs logiques, les variables et les appels éventuels à d'autres fonctions. Cet arbre sert à calculer la table de vérité d'une nouvelle fonction définie par une formule.
+La structure \texttt{Node} repr\'{e}sente l'arbre d'une formule pendant l'analyse. Chaque n\oe ud indique le type d'op\'{e}ration (constante, variable, n\'{e}gation, op\'{e}ration binaire ou appel \`a une autre fonction) et contient des pointeurs vers ses fils. Cette organisation rend l'\'evaluation r\'ecursive naturelle et permet de g\'{e}n\'{e}rer la table de v\'{e}rit\'{e} en parcourant toutes les combinaisons de valeurs.
 
+Une fois la table calcul\'{e}e, l'arbre est lib\'{e}r\'{e} et seule la table binaire est conserv\'{e}e dans la structure \texttt{Function}. Pour limiter l'empreinte m\'{e}moire, les tables sont stock\'{e}es sous forme d'octets (
+\texttt{0} ou \texttt{1}).
 \section*{Fonctionnement général}
 Le fichier \texttt{lexer.l} réalise l'analyse lexicale. Les mots-clés du langage sont reconnus sans distinction de casse. L'analyse syntaxique (\texttt{parser.y}) construit l'arbre de la formule et déclenche les actions suivantes :
 \begin{itemize}
@@ -34,6 +44,7 @@ Le fichier \texttt{lexer.l} réalise l'analyse lexicale. Les mots-clés du langa
 \end{itemize}
 Les formules peuvent contenir des appels imbriqués à des fonctions déjà définies, ce qui permet de composer facilement des définitions.
 
+Lorsqu'une nouvelle fonction est d\'efinie par une formule, l\'arbre obtenu est \'evalu\'e pour chaque combinaison possible de valeurs d\'entr\'ee \,(jusqu\'\`a $2^{\text{arité}}$ essais). Les r\'esultats sont alors plac\'es dans la table binaire, ce qui rend les commandes ult\'erieures (\texttt{eval} ou \texttt{table}) tr\`es rapides.
 \section*{Fonctionnalités réalisées}
 \begin{itemize}
   \item Définition de fonctions par formule logique ou par table de vérité.
@@ -45,6 +56,14 @@ Les formules peuvent contenir des appels imbriqués à des fonctions déjà déf
   \item Ensemble de tests automatisés via \texttt{run-tests.sh}.
 \end{itemize}
 
+\section*{Exemple de session}
+Ci-dessous un extrait de session illustrant l'utilisation de l'interpr\'eteur :
+\begin{verbatim}
+Define f(x,y) = x xor y
+table f
+eval f at 1 0
+\end{verbatim}
+La commande \texttt{table} affiche la table de v\'erit\'e calcul\'ee et \texttt{eval} renvoie le r\'esultat pour les valeurs fournies.
 \section*{Limites et pistes d'amélioration}
 \begin{itemize}
   \item Nombre limité de fonctions et de variables (128 fonctions, 8 variables).
